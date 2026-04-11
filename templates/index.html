@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ethical Password Cracking Lab</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link href="/static/css/style.css" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ══════════════════  SIDEBAR  ══════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <i class="fa-solid fa-shield-halved logo-icon"></i>
+    <div>
+      <span class="lab-title">PwnLab</span>
+      <span class="lab-sub">Ethical Security Lab</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section-label">ATTACK MODULES</div>
+  <a class="nav-link active" data-section="setup"      href="#">
+    <i class="fa-solid fa-database"></i> Setup &amp; Hash Gen
+  </a>
+  <a class="nav-link" data-section="identifier"        href="#">
+    <i class="fa-solid fa-magnifying-glass"></i> Hash Identifier
+  </a>
+  <a class="nav-link" data-section="dictionary"        href="#">
+    <i class="fa-solid fa-book-open"></i> Dictionary Attack
+  </a>
+  <a class="nav-link" data-section="rule"              href="#">
+    <i class="fa-solid fa-wand-magic-sparkles"></i> Rule-Based Attack
+  </a>
+  <a class="nav-link" data-section="bruteforce"        href="#">
+    <i class="fa-solid fa-bolt"></i> Brute Force
+  </a>
+
+  <div class="sidebar-section-label mt-2">DEFENSE MODULES</div>
+  <a class="nav-link" data-section="strength"          href="#">
+    <i class="fa-solid fa-shield-check"></i> Strength Checker
+  </a>
+  <a class="nav-link" data-section="securehash"        href="#">
+    <i class="fa-solid fa-lock"></i> Secure Hashing
+  </a>
+  <a class="nav-link" data-section="generator"         href="#">
+    <i class="fa-solid fa-key"></i> Password Generator
+  </a>
+
+  <div class="sidebar-section-label mt-2">SESSION</div>
+  <a class="nav-link" data-section="history"           href="#">
+    <i class="fa-solid fa-clock-rotate-left"></i> History
+  </a>
+
+  <div class="sidebar-section-label mt-2">REAL-LIFE SIM</div>
+  <a class="nav-link" data-section="breach"            href="#">
+    <i class="fa-solid fa-burst"></i> Breach Simulation
+  </a>
+  <a class="nav-link" data-section="stuffing"          href="#">
+    <i class="fa-solid fa-arrows-spin"></i> Credential Stuffing
+  </a>
+  <a class="nav-link" data-section="cracktime"         href="#">
+    <i class="fa-solid fa-stopwatch"></i> Crack-Time Calculator
+  </a>
+
+  <div class="sidebar-footer">
+    <span class="badge bg-danger">EDUCATIONAL USE ONLY</span>
+  </div>
+</nav>
+
+<!-- ══════════════════  MAIN  ══════════════════ -->
+<main id="main-content">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <button id="sidebar-toggle" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <span class="topbar-title" id="topbar-title">Setup &amp; Hash Generator</span>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <span class="badge bg-warning text-dark">
+        <i class="fa-solid fa-triangle-exclamation"></i> Lab Environment
+      </span>
+      <span id="stats-badge" class="badge bg-secondary">0 operations</span>
+    </div>
+  </div>
+
+  <!-- ── SETUP ── -->
+  <section id="section-setup" class="lab-section">
+    <div class="section-header">
+      <i class="fa-solid fa-database text-primary"></i>
+      <h2>Setup — Generate Hash Targets</h2>
+    </div>
+    <p class="text-muted">Simulates a leaked database dump by hashing a list of weak passwords with multiple algorithms.</p>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Passwords (one per line)</label>
+        <textarea id="setup-passwords" class="form-control code-input" rows="8"
+          placeholder="123456&#10;password&#10;letmein&#10;qwerty"></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Algorithms</label>
+        <div class="check-group">
+          <div class="form-check"><input class="form-check-input setup-algo" type="checkbox" value="md5"    checked><label class="form-check-label">MD5</label></div>
+          <div class="form-check"><input class="form-check-input setup-algo" type="checkbox" value="sha1"   checked><label class="form-check-label">SHA-1</label></div>
+          <div class="form-check"><input class="form-check-input setup-algo" type="checkbox" value="sha256" checked><label class="form-check-label">SHA-256</label></div>
+        </div>
+        <div class="lesson-box mt-3">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Lesson</strong><br>
+          Unsalted hashes are deterministic — the same password always produces the same hash.
+          This is what makes dictionary and rainbow-table attacks possible.
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary mt-3" id="btn-generate-hashes">
+      <i class="fa-solid fa-gear"></i> Generate Hashes
+    </button>
+    <div id="setup-result" class="mt-3 d-none">
+      <div class="result-table-wrap">
+        <table class="table table-sm table-hover result-table" id="setup-table">
+          <thead><tr><th>Plaintext</th><th>Algorithm</th><th>Hash</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HASH IDENTIFIER ── -->
+  <section id="section-identifier" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-magnifying-glass text-info"></i>
+      <h2>Hash Identifier</h2>
+    </div>
+    <p class="text-muted">Detects the probable algorithm based on hash length and character set.</p>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Paste hashes (one per line, or <code>algo:hash</code> format)</label>
+        <textarea id="identify-hashes" class="form-control code-input" rows="6"
+          placeholder="5f4dcc3b5aa765d61d8327deb882cf99&#10;md5:5f4dcc3b5aa765d61d8327deb882cf99"></textarea>
+      </div>
+      <div class="col-md-4">
+        <div class="lesson-box" style="margin-top:1.8rem">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Lesson</strong><br>
+          MD5 = 32 hex chars · SHA-1 = 40 · SHA-256 = 64 · bcrypt starts with <code>$2b$</code> · Argon2 starts with <code>$argon2</code>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-info mt-3" id="btn-identify">
+      <i class="fa-solid fa-search"></i> Identify Hashes
+    </button>
+    <div id="identify-result" class="mt-3 d-none">
+      <table class="table table-sm table-hover result-table">
+        <thead><tr><th>Hash</th><th>Declared</th><th>Identified As</th></tr></thead>
+        <tbody id="identify-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── DICTIONARY ATTACK ── -->
+  <section id="section-dictionary" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-book-open text-danger"></i>
+      <h2>Dictionary Attack</h2>
+    </div>
+    <p class="text-muted">Each word in the list is hashed and compared to targets. Extremely effective against common passwords.</p>
+    <div class="row g-3">
+      <div class="col-md-5">
+        <label class="form-label">Target hashes (one per line)</label>
+        <textarea id="dict-hashes" class="form-control code-input" rows="7"
+          placeholder="5f4dcc3b5aa765d61d8327deb882cf99&#10;md5:e10adc3949ba59abbe56e057f20f883e"></textarea>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Wordlist</label>
+        <select class="form-select" id="dict-wordlist"></select>
+        <label class="form-label mt-2">Algorithm (when not declared in hash)</label>
+        <select class="form-select" id="dict-algo">
+          <option value="md5" selected>MD5</option>
+          <option value="sha1">SHA-1</option>
+          <option value="sha256">SHA-256</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <div class="lesson-box" style="margin-top:1.8rem">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Lesson</strong><br>
+          80 %+ of real-world passwords appear in the rockyou.txt wordlist (14M entries). This demo uses a small subset.
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-danger mt-3" id="btn-dict-attack">
+      <i class="fa-solid fa-play"></i> Run Dictionary Attack
+    </button>
+    <div id="dict-result" class="mt-3 d-none">
+      <div class="d-flex gap-3 mb-2" id="dict-stats"></div>
+      <table class="table table-sm table-hover result-table">
+        <thead><tr><th>Hash</th><th>Algo</th><th>Status</th><th>Plaintext</th><th>Attempts</th></tr></thead>
+        <tbody id="dict-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── RULE-BASED ATTACK ── -->
+  <section id="section-rule" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-wand-magic-sparkles text-warning"></i>
+      <h2>Rule-Based Attack</h2>
+    </div>
+    <p class="text-muted">Applies mutation rules to each wordlist entry — capitalise, append numbers, leet speak, etc.</p>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Target hash</label>
+        <input type="text" class="form-control code-input" id="rule-hash"
+               placeholder="5f4dcc3b5aa765d61d8327deb882cf99"/>
+        <label class="form-label mt-2">Algorithm</label>
+        <select class="form-select" id="rule-algo">
+          <option value="md5" selected>MD5</option>
+          <option value="sha1">SHA-1</option>
+          <option value="sha256">SHA-256</option>
+        </select>
+        <label class="form-label mt-2">Wordlist</label>
+        <select class="form-select" id="rule-wordlist"></select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Mutation Rules</label>
+        <div class="check-group" id="rule-checkboxes">
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="capitalize"    checked><label class="form-check-label">capitalize (Password)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="uppercase"     checked><label class="form-check-label">uppercase (PASSWORD)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="reverse"       checked><label class="form-check-label">reverse (drowssap)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="leet"          checked><label class="form-check-label">leet (p@$$w0rd)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="double"        checked><label class="form-check-label">double (passpass)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="append_digits" checked><label class="form-check-label">append digits (pass1, pass123)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="append_symbols" checked><label class="form-check-label">append symbols (pass!, pass@)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="prepend_digits"><label class="form-check-label">prepend digits (1pass)</label></div>
+          <div class="form-check"><input class="form-check-input rule-cb" type="checkbox" value="toggle_case"><label class="form-check-label">toggle case (PaSsWoRd)</label></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="lesson-box" style="margin-top:1.8rem">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Lesson</strong><br>
+          Users predictably mutate passwords: capitalise the first letter, swap <code>a→@</code>, append a year.
+          Rule-based attacks exploit these patterns, cracking passwords that survive a plain dictionary attack.
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-warning mt-3 text-dark" id="btn-rule-attack">
+      <i class="fa-solid fa-play"></i> Run Rule-Based Attack
+    </button>
+    <div id="rule-result" class="mt-3 d-none">
+      <div id="rule-result-box"></div>
+    </div>
+  </section>
+
+  <!-- ── BRUTE FORCE ── -->
+  <section id="section-bruteforce" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-bolt text-danger"></i>
+      <h2>Brute Force Attack</h2>
+    </div>
+    <p class="text-muted">Systematically tries every combination. Shows why password length and algorithm choice matter enormously.</p>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Target hash</label>
+        <input type="text" class="form-control code-input" id="bf-hash"
+               placeholder="81dc9bdb52d04dc20036dbd8313ed055"/>
+        <label class="form-label mt-2">Algorithm</label>
+        <select class="form-select" id="bf-algo">
+          <option value="md5" selected>MD5</option>
+          <option value="sha1">SHA-1</option>
+          <option value="sha256">SHA-256</option>
+        </select>
+        <label class="form-label mt-2">Charset</label>
+        <select class="form-select" id="bf-charset">
+          <option value="digits"    selected>Digits (0-9)</option>
+          <option value="lowercase">Lowercase (a-z)</option>
+          <option value="uppercase">Uppercase (A-Z)</option>
+          <option value="alpha">Alpha (a-zA-Z)</option>
+          <option value="alphanum">Alphanumeric</option>
+          <option value="common">Common (!@#$)</option>
+        </select>
+        <label class="form-label mt-2">Max length <span class="text-muted">(≤ 6 for demo)</span></label>
+        <input type="number" class="form-control" id="bf-maxlen" value="4" min="1" max="6"/>
+        <div class="mt-2 small text-muted" id="bf-search-space"></div>
+      </div>
+      <div class="col-md-8">
+        <div class="lesson-box mb-3">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Why Brute Force Slows Down</strong><br>
+          <table class="table table-sm table-borderless text-muted mb-0 mt-1">
+            <tbody>
+              <tr><td>MD5 (raw)</td><td>~200 <strong>billion</strong>/sec on RTX 4090</td></tr>
+              <tr><td>bcrypt (cost=12)</td><td>~10/sec on same GPU</td></tr>
+              <tr><td>Argon2id (64 MB)</td><td>~few/sec — memory bottleneck defeats GPUs</td></tr>
+            </tbody>
+          </table>
+          <strong>8-char alphanum password = 218 trillion combinations</strong> — at 200B/sec that's ~18 minutes.
+          At bcrypt speed: <strong>~690 years.</strong>
+        </div>
+        <div id="bf-progress-area" class="d-none">
+          <div class="d-flex justify-content-between mb-1">
+            <span id="bf-status-text" class="fw-bold">Running…</span>
+            <span id="bf-pct">0%</span>
+          </div>
+          <div class="progress mb-2" style="height:20px">
+            <div id="bf-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                 role="progressbar" style="width:0%"></div>
+          </div>
+          <div class="d-flex gap-3 flex-wrap" id="bf-live-stats"></div>
+        </div>
+        <div id="bf-result-box" class="mt-2"></div>
+      </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-danger" id="btn-bf-start">
+        <i class="fa-solid fa-play"></i> Start Brute Force
+      </button>
+      <button class="btn btn-secondary d-none" id="btn-bf-cancel">
+        <i class="fa-solid fa-stop"></i> Cancel
+      </button>
+    </div>
+  </section>
+
+  <!-- ── STRENGTH CHECKER ── -->
+  <section id="section-strength" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-shield-check text-success"></i>
+      <h2>Password Strength Checker</h2>
+    </div>
+    <p class="text-muted">Analyzes entropy and security policy compliance. Input is <em>never</em> sent to any external server.</p>
+    <div class="row g-3 align-items-start">
+      <div class="col-md-5">
+        <label class="form-label">Enter a password to analyze</label>
+        <div class="input-group">
+          <input type="password" class="form-control code-input" id="strength-input"
+                 placeholder="Type a password…" autocomplete="off"/>
+          <button class="btn btn-outline-secondary" id="btn-show-pw" type="button">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+        <button class="btn btn-success mt-3 w-100" id="btn-strength-check">
+          <i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Strength
+        </button>
+      </div>
+      <div class="col-md-7">
+        <div id="strength-result" class="d-none">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="score-circle" id="score-circle">0</div>
+            <div>
+              <div class="fw-bold fs-5" id="score-label-text">—</div>
+              <div class="text-muted" id="score-entropy-text">Entropy: — bits</div>
+            </div>
+          </div>
+          <div class="progress mb-3" style="height:14px">
+            <div id="score-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+          </div>
+          <div id="strength-checks"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECURE HASHING ── -->
+  <section id="section-securehash" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-lock text-success"></i>
+      <h2>Secure Hashing Demo</h2>
+    </div>
+    <p class="text-muted">Compares MD5, SHA-256, bcrypt, and Argon2id — showing why algorithm choice is critical.</p>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Password to hash</label>
+        <input type="text" class="form-control code-input" id="secure-pw"
+               value="MyS3cretPa$$word"/>
+        <button class="btn btn-success mt-3 w-100" id="btn-secure-hash">
+          <i class="fa-solid fa-play"></i> Run Comparison
+        </button>
+        <div class="lesson-box mt-3">
+          <strong><i class="fa-solid fa-graduation-cap"></i> Takeaways</strong>
+          <ol class="mb-0 mt-1 ps-3">
+            <li>Never store passwords as MD5/SHA-1</li>
+            <li>Use bcrypt (cost ≥ 12) or Argon2id</li>
+            <li>Salt must be unique per user</li>
+            <li>A slow hash is a <em>feature</em></li>
+          </ol>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div id="secure-result" class="d-none">
+          <div id="secure-cards" class="row g-2 mb-3"></div>
+          <canvas id="hash-speed-chart" height="140"></canvas>
+        </div>
+        <div id="secure-spinner" class="d-none text-center py-5">
+          <div class="spinner-border text-success"></div>
+          <div class="mt-2 text-muted">Computing hashes (bcrypt/Argon2 are intentionally slow)…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PASSWORD GENERATOR ── -->
+  <section id="section-generator" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-key text-warning"></i>
+      <h2>Password Generator</h2>
+    </div>
+    <p class="text-muted">Generates cryptographically strong passwords using <code>secrets</code> (CSPRNG). Never uses <code>random</code>.</p>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="mb-3">
+          <label class="form-label">Mode</label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gen-mode" id="gen-mode-pw" value="password" checked>
+              <label class="form-check-label" for="gen-mode-pw">Password</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gen-mode" id="gen-mode-pp" value="passphrase">
+              <label class="form-check-label" for="gen-mode-pp">Passphrase</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="gen-pw-opts">
+          <label class="form-label">Length</label>
+          <input type="range" class="form-range" id="gen-length" min="8" max="64" value="16" oninput="document.getElementById('gen-length-val').textContent=this.value"/>
+          <div class="text-center fw-bold" id="gen-length-val">16</div>
+          <div class="check-group mt-2">
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="gen-upper"   checked><label class="form-check-label">Uppercase</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="gen-digits"  checked><label class="form-check-label">Digits</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="gen-symbols" checked><label class="form-check-label">Symbols</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="gen-noamb"><label class="form-check-label">Exclude ambiguous (0Ol1I)</label></div>
+          </div>
+        </div>
+
+        <div id="gen-pp-opts" class="d-none">
+          <label class="form-label">Number of words</label>
+          <input type="range" class="form-range" id="gen-words" min="3" max="10" value="5" oninput="document.getElementById('gen-words-val').textContent=this.value"/>
+          <div class="text-center fw-bold" id="gen-words-val">5</div>
+          <label class="form-label mt-1">Separator</label>
+          <input type="text" class="form-control" id="gen-separator" value="-" maxlength="3"/>
+        </div>
+
+        <label class="form-label mt-2">Count</label>
+        <input type="number" class="form-control" id="gen-count" value="8" min="1" max="20"/>
+        <button class="btn btn-warning mt-3 w-100 text-dark" id="btn-generate">
+          <i class="fa-solid fa-rotate"></i> Generate
+        </button>
+      </div>
+      <div class="col-md-8">
+        <div id="gen-result"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HISTORY ── -->
+  <section id="section-history" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-clock-rotate-left text-secondary"></i>
+      <h2>Session History</h2>
+    </div>
+    <div class="d-flex gap-2 mb-3">
+      <button class="btn btn-sm btn-outline-secondary" id="btn-refresh-history">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+      <a class="btn btn-sm btn-outline-success" href="/api/history/export" download>
+        <i class="fa-solid fa-file-csv"></i> Export CSV
+      </a>
+      <button class="btn btn-sm btn-outline-danger" id="btn-clear-history">
+        <i class="fa-solid fa-trash"></i> Clear
+      </button>
+    </div>
+    <div id="history-empty" class="text-muted">No operations recorded yet in this session.</div>
+    <table class="table table-sm table-hover result-table d-none" id="history-table">
+      <thead><tr><th>Time</th><th>Operation</th><th>Details</th><th>Status</th></tr></thead>
+      <tbody id="history-tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       REAL-LIFE SIMULATION SECTIONS
+  ═══════════════════════════════════════════════ -->
+
+  <!-- ── BREACH SIMULATION ── -->
+  <section id="section-breach" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-burst text-danger"></i>
+      <h2>Live Breach Simulation — MegaBank XYZ</h2>
+    </div>
+    <p class="text-muted">
+      A fictional fintech company's employee database has been exfiltrated.
+      Passwords were stored using <strong>unsalted MD5 / SHA-1 / SHA-256</strong> — common in real breaches.
+      Watch the attack unfold in three waves and see who survives.
+    </p>
+
+    <!-- Employee database preview -->
+    <div class="scenario-card mb-3">
+      <div class="scenario-header">
+        <i class="fa-solid fa-database"></i>
+        <span>Exfiltrated Database — 15 Employee Accounts</span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-load-db">
+          <i class="fa-solid fa-download"></i> Load Database
+        </button>
+      </div>
+      <div id="breach-db-table-wrap" class="d-none">
+        <div class="table-responsive">
+          <table class="table table-sm result-table">
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Role</th><th>Email</th>
+              <th>Hash Algo</th><th>Clearance</th><th>Systems at Risk</th>
+            </tr></thead>
+            <tbody id="breach-db-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attack controls -->
+    <div class="d-flex gap-3 align-items-center mb-3 flex-wrap">
+      <button class="btn btn-danger" id="btn-run-breach">
+        <i class="fa-solid fa-play"></i> Run Full Breach Attack
+      </button>
+      <div class="text-muted small">Runs waves: Dictionary → Rules → Brute Force</div>
+    </div>
+
+    <!-- Timeline -->
+    <div id="breach-timeline" class="d-none">
+      <!-- Wave headers + animated entries injected by JS -->
+    </div>
+
+    <!-- Summary -->
+    <div id="breach-summary" class="d-none mt-3">
+      <div class="row g-3" id="breach-summary-cards"></div>
+      <div class="mt-3 p-3 lesson-box" id="breach-blast-radius">
+        <strong><i class="fa-solid fa-radiation text-danger"></i> Blast Radius Analysis</strong>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── CREDENTIAL STUFFING ── -->
+  <section id="section-stuffing" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-arrows-spin text-warning"></i>
+      <h2>Credential Stuffing Attack</h2>
+    </div>
+    <p class="text-muted">
+      Using the cracked MegaBank XYZ credentials, an attacker automatically tries
+      the same (or similar) passwords on 8 popular external services.
+      This works because <strong>65 %+ of users reuse passwords across sites</strong>.
+    </p>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="lesson-box">
+          <strong><i class="fa-solid fa-graduation-cap"></i> How Credential Stuffing Works</strong>
+          <ol class="mb-0 mt-2 ps-3">
+            <li>Attacker buys/steals a leaked credentials database</li>
+            <li>Automates login attempts across hundreds of services</li>
+            <li>Even a <strong>1–3 % success rate</strong> yields thousands of accounts</li>
+            <li>Compromised accounts are sold, used for fraud, or ransomed</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="lesson-box">
+          <strong><i class="fa-solid fa-shield-halved text-success"></i> How to Defend</strong>
+          <ul class="mb-0 mt-2 ps-3">
+            <li><strong>Never reuse passwords</strong> — use a password manager</li>
+            <li>Enable <strong>2FA / MFA</strong> on every account</li>
+            <li>Services: implement <strong>rate limiting + CAPTCHA</strong></li>
+            <li>Check accounts on <em>haveibeenpwned.com</em> regularly</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+      <button class="btn btn-warning text-dark" id="btn-run-stuffing">
+        <i class="fa-solid fa-play"></i> Run Breach First (then Stuffing)
+      </button>
+      <span class="text-muted small" id="stuffing-prereq">Run the Breach Simulation first to get cracked credentials.</span>
+    </div>
+
+    <div id="stuffing-result" class="d-none">
+      <!-- Service grid injected by JS -->
+    </div>
+  </section>
+
+
+  <!-- ── CRACK-TIME CALCULATOR ── -->
+  <section id="section-cracktime" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-stopwatch text-info"></i>
+      <h2>Time-to-Crack Calculator</h2>
+    </div>
+    <p class="text-muted">
+      See <em>exactly</em> how long cracking your password would take — from a consumer laptop to a nation-state compute cluster.
+      This is the most visceral way to understand why algorithm and length choices matter.
+    </p>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Password length</label>
+        <input type="range" class="form-range" id="ct-length" min="1" max="30" value="8"
+               oninput="document.getElementById('ct-length-val').textContent=this.value"/>
+        <div class="text-center fw-bold" id="ct-length-val">8</div>
+
+        <label class="form-label mt-2">Character set</label>
+        <select class="form-select" id="ct-charset">
+          <option value="digits">Digits only (0-9) — 10 chars</option>
+          <option value="lowercase">Lowercase a-z — 26 chars</option>
+          <option value="alpha">Alpha a-zA-Z — 52 chars</option>
+          <option value="alphanum" selected>Alphanumeric — 62 chars</option>
+          <option value="full">Full printable ASCII — 95 chars</option>
+        </select>
+
+        <label class="form-label mt-2">Storage algorithm</label>
+        <select class="form-select" id="ct-algo">
+          <option value="md5">MD5 (terrible — common in breaches)</option>
+          <option value="sha1">SHA-1 (bad)</option>
+          <option value="sha256">SHA-256 (mediocre for passwords)</option>
+          <option value="bcrypt">bcrypt cost=12 (good)</option>
+          <option value="argon2">Argon2id (best)</option>
+        </select>
+
+        <div class="mt-3 p-2 bg-dark border border-secondary rounded" id="ct-combo-display">
+          <div class="text-muted small">Search space</div>
+          <div class="fw-bold text-warning fs-5" id="ct-combo-val">—</div>
+          <div class="text-muted small" id="ct-combo-sub">combinations</div>
+        </div>
+
+        <button class="btn btn-info mt-3 w-100 text-dark" id="btn-calc-crack">
+          <i class="fa-solid fa-calculator"></i> Calculate Times
+        </button>
+      </div>
+
+      <div class="col-md-8">
+        <div id="ct-result" class="d-none">
+          <div class="row g-2 mb-3" id="ct-attacker-cards"></div>
+          <canvas id="crack-time-chart" height="180"></canvas>
+          <div class="lesson-box mt-3" id="ct-lesson"></div>
+        </div>
+        <div id="ct-empty" class="text-muted py-4 text-center">
+          <i class="fa-solid fa-clock fa-3x mb-3 d-block" style="color:#30363d"></i>
+          Adjust the parameters and click <strong>Calculate Times</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<!-- Toast notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
