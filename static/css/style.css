@@ -536,3 +536,113 @@ body.sidebar-collapsed #main-content { margin-left: 0; }
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ═══════════════════  DISPLAY THEMES (dark default = :root)  ═══════════════════ */
+
+.ct-empty-icon { color: var(--border); }
+
+[data-app-theme="light"] {
+  --bg:       #f6f8fa;
+  --bg2:      #ffffff;
+  --bg3:      #eaeef2;
+  --border:   #d0d7de;
+  --text:     #24292f;
+  --muted:    #57606a;
+  --accent:   #0969da;
+  --green:    #1a7f37;
+  --red:      #cf222e;
+  --yellow:   #9a6700;
+  --orange:   #bc4c00;
+  --purple:   #8250df;
+}
+
+[data-app-theme="light"] #sidebar .nav-link.active {
+  background: rgba(9, 105, 218, 0.1);
+}
+
+[data-app-theme="light"] .lesson-box {
+  background: rgba(9, 105, 218, 0.06);
+  border-color: rgba(9, 105, 218, 0.25);
+  border-left-color: var(--accent);
+}
+
+[data-app-theme="light"] .lesson-box strong { color: var(--accent); }
+
+[data-app-theme="light"] .code-input:focus {
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2) !important;
+}
+
+[data-app-theme="light"] .form-control:focus,
+[data-app-theme="light"] .form-select:focus {
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15) !important;
+}
+
+[data-app-theme="light"] .disclaimer-banner {
+  background: rgba(154, 103, 0, 0.12);
+  border-bottom-color: rgba(154, 103, 0, 0.35);
+  color: var(--yellow);
+}
+
+[data-app-theme="contrast"] {
+  --bg:       #000000;
+  --bg2:      #000000;
+  --bg3:      #0a0a0a;
+  --border:   #ffffff;
+  --text:     #ffffff;
+  --muted:    #e6e6e6;
+  --accent:   #ffff00;
+  --green:    #00ff00;
+  --red:      #ff6666;
+  --yellow:   #ffff00;
+  --orange:   #ff9900;
+  --purple:   #ff99ff;
+}
+
+[data-app-theme="contrast"] #sidebar .nav-link.active {
+  background: #000080;
+  color: #ffff00;
+  border-left-color: #ffff00;
+}
+
+[data-app-theme="contrast"] .lesson-box {
+  background: #000000;
+  border: 2px solid #ffffff;
+  border-left-width: 6px;
+  border-left-color: #ffff00;
+  color: #ffffff;
+}
+
+[data-app-theme="contrast"] .lesson-box strong { color: #ffff00; }
+
+[data-app-theme="contrast"] .code-input:focus,
+[data-app-theme="contrast"] .form-control:focus,
+[data-app-theme="contrast"] .form-select:focus {
+  outline: 3px solid #ffff00;
+  outline-offset: 1px;
+  box-shadow: none !important;
+}
+
+[data-app-theme="contrast"] .ev-badge.cracked  { background: #ff0000; color: #ffffff; }
+[data-app-theme="contrast"] .ev-badge.survived { background: #00cc00; color: #000000; }
+
+[data-app-theme="contrast"] .badge-trivial    { background: #ffffff; color: #000000; }
+[data-app-theme="contrast"] .badge-easy       { background: #ffff00; color: #000000; }
+[data-app-theme="contrast"] .badge-moderate    { background: #00ffff; color: #000000; }
+[data-app-theme="contrast"] .badge-hard        { background: #00ff00; color: #000000; }
+[data-app-theme="contrast"] .badge-infeasible  { background: #cccccc; color: #000000; }
+
+[data-app-theme="contrast"] .cl-executive { background: #ff0000; color: #ffffff; }
+[data-app-theme="contrast"] .cl-admin     { background: #ff6600; color: #000000; }
+[data-app-theme="contrast"] .cl-high      { background: #ffff00; color: #000000; }
+[data-app-theme="contrast"] .cl-medium    { background: #00ff00; color: #000000; }
+[data-app-theme="contrast"] .cl-low       { background: #ffffff; color: #000000; }
+
+[data-app-theme="light"] #ct-combo-display {
+  background-color: var(--bg3) !important;
+  border-color: var(--border) !important;
+}
+
+[data-app-theme="contrast"] #ct-combo-display {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}

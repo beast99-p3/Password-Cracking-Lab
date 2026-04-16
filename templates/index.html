@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark" data-app-theme="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -78,7 +78,18 @@
       <i class="fa-solid fa-bars"></i>
     </button>
     <span class="topbar-title" id="topbar-title">Setup &amp; Hash Generator</span>
-    <div class="ms-auto d-flex align-items-center gap-2">
+    <div class="ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-end">
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1" type="button" id="theme-menu-btn" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="Display theme">
+          <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+          <span class="d-none d-md-inline" id="theme-menu-label">Theme</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" id="theme-menu-list" aria-labelledby="theme-menu-btn">
+          <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 active" data-app-theme-item="dark"><i class="fa-solid fa-moon" aria-hidden="true"></i> Dark</button></li>
+          <li><button type="button" class="dropdown-item d-flex align-items-center gap-2" data-app-theme-item="light"><i class="fa-solid fa-sun" aria-hidden="true"></i> Light</button></li>
+          <li><button type="button" class="dropdown-item d-flex align-items-center gap-2" data-app-theme-item="contrast"><i class="fa-solid fa-universal-access" aria-hidden="true"></i> High contrast</button></li>
+        </ul>
+      </div>
       <span class="badge bg-warning text-dark">
         <i class="fa-solid fa-triangle-exclamation"></i> Lab Environment
       </span>
@@ -639,7 +650,7 @@
           <div class="lesson-box mt-3" id="ct-lesson"></div>
         </div>
         <div id="ct-empty" class="text-muted py-4 text-center">
-          <i class="fa-solid fa-clock fa-3x mb-3 d-block" style="color:#30363d"></i>
+          <i class="fa-solid fa-clock fa-3x mb-3 d-block ct-empty-icon" aria-hidden="true"></i>
           Adjust the parameters and click <strong>Calculate Times</strong>
         </div>
       </div>

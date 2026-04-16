@@ -11,18 +11,21 @@ const $ = id => document.getElementById(id);
 const sections = {};
 let opCount = 0;
 let speedChart = null;
+let crackTimeChart = null;
 let bfJobId = null;
 let bfPollTimer = null;
 
 function showToast(msg, type = "info") {
   const colors = { success: "#3fb950", danger: "#f85149", info: "#58a6ff", warning: "#d29922" };
+  const lightToast = document.documentElement.getAttribute("data-bs-theme") === "light";
+  const closeExtra = lightToast ? "" : " btn-close-white";
   const toast = document.createElement("div");
   toast.className = "toast show align-items-center border-0 mb-2";
   toast.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
   toast.innerHTML = `
     <div class="d-flex">
       <div class="toast-body">${msg}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close${closeExtra} me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>`;
   $("toast-container").appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
@@ -56,6 +59,98 @@ function copyToClipboard(text, btn) {
 function incOp() {
   opCount++;
   $("stats-badge").textContent = `${opCount} operation${opCount !== 1 ? "s" : ""}`;
+}
+
+const THEME_STORAGE_KEY = "pwnlab-theme";
+
+function chartPalette() {
+  const t = document.documentElement.getAttribute("data-app-theme") || "dark";
+  if (t === "light")
+    return { text: "#57606a", grid: "#d8dee0", title: "#57606a" };
+  if (t === "contrast")
+    return { text: "#ffffff", grid: "#666666", title: "#ffffff" };
+  return { text: "#8b949e", grid: "#30363d", title: "#8b949e" };
+}
+
+function refreshChartsTheme() {
+  const p = chartPalette();
+  if (speedChart?.options) {
+    const plug = speedChart.options.plugins;
+    if (plug?.title) plug.title.color = p.title;
+    const sx = speedChart.options.scales?.x;
+    const sy = speedChart.options.scales?.y;
+    if (sx) {
+      sx.ticks = sx.ticks || {};
+      sx.ticks.color = p.text;
+      sx.grid = sx.grid || {};
+      sx.grid.color = p.grid;
+    }
+    if (sy) {
+      sy.ticks = sy.ticks || {};
+      sy.ticks.color = p.text;
+      sy.grid = sy.grid || {};
+      sy.grid.color = p.grid;
+      if (sy.title) sy.title.color = p.text;
+    }
+    speedChart.update();
+  }
+  if (crackTimeChart?.options) {
+    const leg = crackTimeChart.options.plugins?.legend;
+    if (leg?.labels) leg.labels.color = p.text;
+    const cx = crackTimeChart.options.scales?.x;
+    const cy = crackTimeChart.options.scales?.y;
+    if (cx) {
+      cx.ticks = cx.ticks || {};
+      cx.ticks.color = p.text;
+      cx.grid = cx.grid || {};
+      cx.grid.color = p.grid;
+    }
+    if (cy) {
+      cy.ticks = cy.ticks || {};
+      cy.ticks.color = p.text;
+      cy.grid = cy.grid || {};
+      cy.grid.color = p.grid;
+      if (cy.title) cy.title.color = p.text;
+    }
+    crackTimeChart.update();
+  }
+}
+
+function applyAppTheme(theme) {
+  const t = ["dark", "light", "contrast"].includes(theme) ? theme : "dark";
+  document.documentElement.setAttribute("data-app-theme", t);
+  document.documentElement.setAttribute("data-bs-theme", t === "light" ? "light" : "dark");
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, t);
+  } catch { /* ignore */ }
+
+  const labels = { dark: "Dark", light: "Light", contrast: "High contrast" };
+  const lab = $("theme-menu-label");
+  if (lab) lab.textContent = labels[t];
+
+  const menu = $("theme-menu-list");
+  if (menu)
+    menu.className =
+      "dropdown-menu dropdown-menu-end" + (t === "light" ? "" : " dropdown-menu-dark");
+
+  document.querySelectorAll("[data-app-theme-item]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-app-theme-item") === t);
+  });
+
+  refreshChartsTheme();
+}
+
+function initTheme() {
+  let saved = "dark";
+  try {
+    saved = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+  } catch { /* ignore */ }
+  applyAppTheme(saved);
+  document.querySelectorAll("[data-app-theme-item]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      applyAppTheme(btn.getAttribute("data-app-theme-item"));
+    });
+  });
 }
 
 // ── Sidebar navigation ─────────────────────────────────────────────────────
@@ -522,6 +617,7 @@ function renderSecureHashResults(results) {
   const labels = results.map(r => r.algorithm);
   const times  = results.map(r => r.time_ms);
   const bgs    = ["#f85149aa", "#fb8f44aa", "#d29922aa", "#3fb950aa"];
+  const cp = chartPalette();
 
   speedChart = new Chart(ctx, {
     type: "bar",
@@ -540,13 +636,13 @@ function renderSecureHashResults(results) {
       responsive: true,
       plugins: {
         legend: { display: false },
-        title: { display: true, text: "Hash Computation Time (ms) — lower is faster, but slower = more secure for passwords", color: "#8b949e", font: { size: 12 } },
+        title: { display: true, text: "Hash Computation Time (ms) — lower is faster, but slower = more secure for passwords", color: cp.title, font: { size: 12 } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString()} ms` } }
       },
       scales: {
-        x: { ticks: { color: "#8b949e" }, grid: { color: "#30363d" } },
-        y: { ticks: { color: "#8b949e" }, grid: { color: "#30363d" }, beginAtZero: true,
-             title: { display: true, text: "ms", color: "#8b949e" } }
+        x: { ticks: { color: cp.text }, grid: { color: cp.grid } },
+        y: { ticks: { color: cp.text }, grid: { color: cp.grid }, beginAtZero: true,
+             title: { display: true, text: "ms", color: cp.text } }
       }
     }
   });
@@ -661,6 +757,7 @@ function initHistory() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initNav();
   loadWordlists();
   initSetup();
@@ -683,7 +780,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 let crackedEmployees = [];   // populated after breach simulation
 let breachDbLoaded   = false;
-let crackTimeChart   = null;
 
 // ── BREACH SIMULATION ────────────────────────────────────────
 
@@ -963,6 +1059,7 @@ function renderCrackTimeResult(data) {
   const labels = data.profiles.map(p => p.name);
   const vals   = data.profiles.map(p => Math.log10(Math.max(p.avg_seconds, 1)));
   if (crackTimeChart) crackTimeChart.destroy();
+  const cp = chartPalette();
   crackTimeChart = new Chart($("crack-time-chart"), {
     type: "bar",
     data: {
@@ -973,11 +1070,11 @@ function renderCrackTimeResult(data) {
     },
     options: {
       responsive: true,
-      plugins: { legend: { labels: { color: "#8b949e" } } },
+      plugins: { legend: { labels: { color: cp.text } } },
       scales: {
-        x: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" } },
-        y: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" },
-             title: { display: true, text: "log₁₀(seconds)", color: "#8b949e" } }
+        x: { ticks: { color: cp.text }, grid: { color: cp.grid } },
+        y: { ticks: { color: cp.text }, grid: { color: cp.grid },
+             title: { display: true, text: "log₁₀(seconds)", color: cp.text } }
       }
     }
   });
