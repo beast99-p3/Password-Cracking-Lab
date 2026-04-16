@@ -4,8 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ethical Password Cracking Lab</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" crossorigin="anonymous"/>
   <link href="/static/css/style.css" rel="stylesheet"/>
 </head>
 <body>
@@ -33,13 +34,16 @@
   <a class="nav-link" data-section="rule"              href="#">
     <i class="fa-solid fa-wand-magic-sparkles"></i> Rule-Based Attack
   </a>
+  <a class="nav-link" data-section="rainbow"           href="#">
+    <i class="fa-solid fa-table"></i> Rainbow Tables
+  </a>
   <a class="nav-link" data-section="bruteforce"        href="#">
     <i class="fa-solid fa-bolt"></i> Brute Force
   </a>
 
   <div class="sidebar-section-label mt-2">DEFENSE MODULES</div>
   <a class="nav-link" data-section="strength"          href="#">
-    <i class="fa-solid fa-shield-check"></i> Strength Checker
+    <i class="fa-solid fa-gauge-high fa-fw" aria-hidden="true"></i> Strength Checker
   </a>
   <a class="nav-link" data-section="securehash"        href="#">
     <i class="fa-solid fa-lock"></i> Secure Hashing
@@ -261,6 +265,50 @@
     </div>
   </section>
 
+  <!-- ── RAINBOW TABLES (educational) ── -->
+  <section id="section-rainbow" class="lab-section d-none">
+    <div class="section-header">
+      <i class="fa-solid fa-table text-info"></i>
+      <h2>Rainbow Tables</h2>
+    </div>
+    <p class="text-muted mb-2">
+      Precomputed chains trade <strong>disk and precomputation time</strong> for faster hash reversal on
+      <strong>unsalted</strong> digests. This lab builds a real (tiny) MD5 rainbow set over 100 passwords so you can see start/end rows, chain walks, and lookup with verification.
+    </p>
+    <div class="lesson-box mb-3">
+      <strong><i class="fa-solid fa-graduation-cap"></i> Concept</strong>
+      <p class="mb-2 mt-2" id="rainbow-lesson-why"></p>
+      <strong><i class="fa-solid fa-shield-halved text-success"></i> Why salting wins</strong>
+      <p class="mb-0 mt-2" id="rainbow-lesson-salt"></p>
+    </div>
+    <p class="small text-muted" id="rainbow-meta"></p>
+
+    <div class="scenario-card mb-3">
+      <div class="scenario-header">
+        <i class="fa-solid fa-link"></i>
+        <span>Sample chains (first rows of the full table)</span>
+      </div>
+      <div class="p-3" id="rainbow-chains-sample"></div>
+    </div>
+
+    <div class="row g-3 align-items-end">
+      <div class="col-md-8">
+        <label class="form-label">Target MD5 (32 hex chars)</label>
+        <input type="text" class="form-control code-input" id="rainbow-hash-input" maxlength="32"
+               placeholder="paste an MD5 hash from the chains below or your own 00–99 password"/>
+      </div>
+      <div class="col-md-4 d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-info text-dark" id="btn-rainbow-lookup">
+          <i class="fa-solid fa-magnifying-glass"></i> Lookup in table
+        </button>
+      </div>
+    </div>
+    <div class="mt-2 small text-muted">Try a sample:</div>
+    <div class="d-flex flex-wrap gap-2 mt-1 mb-3" id="rainbow-sample-buttons"></div>
+
+    <div id="rainbow-lookup-result" class="mt-3 d-none"></div>
+  </section>
+
   <!-- ── BRUTE FORCE ── -->
   <section id="section-bruteforce" class="lab-section d-none">
     <div class="section-header">
@@ -332,7 +380,7 @@
   <!-- ── STRENGTH CHECKER ── -->
   <section id="section-strength" class="lab-section d-none">
     <div class="section-header">
-      <i class="fa-solid fa-shield-check text-success"></i>
+      <i class="fa-solid fa-gauge-high text-success" aria-hidden="true"></i>
       <h2>Password Strength Checker</h2>
     </div>
     <p class="text-muted">Analyzes entropy and security policy compliance. Input is <em>never</em> sent to any external server.</p>
@@ -346,8 +394,8 @@
             <i class="fa-solid fa-eye"></i>
           </button>
         </div>
-        <button class="btn btn-success mt-3 w-100" id="btn-strength-check">
-          <i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Strength
+        <button class="btn btn-success mt-3 w-100" id="btn-strength-check" type="button">
+          <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Analyze Strength
         </button>
       </div>
       <div class="col-md-7">

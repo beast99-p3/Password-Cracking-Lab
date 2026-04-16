@@ -24,7 +24,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from flask import Flask, jsonify, render_template, request, Response, stream_with_context
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    send_from_directory,
+    stream_with_context,
+)
 from flask_cors import CORS
 
 # ── Path setup ────────────────────────────────────────────────────────────────
@@ -33,6 +41,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 from attacks.rule_attack      import rule_attack, apply_rules, ALL_RULES
 from attacks.hash_identifier  import identify_hash
+from attacks.rainbow_demo     import CHAIN_LENGTH, demo_payload, full_demo, lookup_preimage
 from defense.password_generator import generate_password, generate_passphrase, strength_label
 from simulations.breach_scenario import FICTIONAL_EMPLOYEES
 
@@ -79,6 +88,16 @@ def log_history(operation: str, payload: Dict[str, Any]):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Browsers request /favicon.ico by default; serve the SVG with an icon MIME type."""
+    return send_from_directory(
+        BASE_DIR / "static",
+        "favicon.svg",
+        mimetype="image/svg+xml",
+    )
 
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
@@ -227,6 +246,39 @@ def api_rule_attack():
         "status": "cracked" if result["cracked"] else "not_found",
     })
     return jsonify(result)
+
+
+# ─── Rainbow table (educational micro-demo) ─────────────────────────────────
+
+@app.route("/api/rainbow/demo", methods=["GET"])
+def api_rainbow_demo():
+    return jsonify(demo_payload())
+
+
+@app.route("/api/rainbow/lookup", methods=["POST"])
+def api_rainbow_lookup():
+    data = request.get_json(force=True)
+    target = data.get("hash", "").strip().lower()
+    if not target:
+        return jsonify({"error": "No hash provided."}), 400
+
+    fd = full_demo()
+    result = lookup_preimage(target, fd["table"], CHAIN_LENGTH)
+    if result:
+        log_history("Rainbow Table Demo", {
+            "details": f"preimage={result['plaintext']} (chain {result['chain_start']}→{result['matched_end']})",
+            "status": "cracked",
+        })
+        return jsonify({"found": True, **result})
+
+    log_history("Rainbow Table Demo", {
+        "details": "lookup miss (outside keyspace or no chain match)",
+        "status": "not_found",
+    })
+    return jsonify({
+        "found": False,
+        "message": "No preimage in this demo. Tables only cover unsalted MD5 of two-digit passwords 00–99.",
+    })
 
 
 # ─── Brute Force (SSE streaming) ──────────────────────────────────────────────

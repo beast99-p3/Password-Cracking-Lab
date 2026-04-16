@@ -157,7 +157,7 @@ function initTheme() {
 
 function initNav() {
   const links = document.querySelectorAll("#sidebar .nav-link");
-  const sectionIds = ["setup","identifier","dictionary","rule","bruteforce",
+  const sectionIds = ["setup","identifier","dictionary","rule","rainbow","bruteforce",
                       "strength","securehash","generator","history",
                       "breach","stuffing","cracktime"];
 
@@ -367,6 +367,95 @@ function initRuleAttack() {
   });
 }
 
+// ── SECTION: Rainbow tables (educational) ─────────────────────────────────
+
+function renderRainbowDemo(d) {
+  $("rainbow-lesson-why").textContent = d.lesson.why;
+  $("rainbow-lesson-salt").textContent = d.lesson.salt;
+  $("rainbow-meta").textContent =
+    `${d.algorithm.toUpperCase()} · chain length ${d.chain_length} · ${d.keyspace} · ${d.chains_total} chains precomputed`;
+
+  const wrap = $("rainbow-chains-sample");
+  wrap.innerHTML = "";
+  d.chains_sample.forEach(ch => {
+    const block = document.createElement("div");
+    block.className = "rainbow-chain-block mb-3";
+    let rows = ch.steps.map(s => `<tr><td>${s.step}</td><td class="text-warning">${escHtml(s.plain)}</td>
+      <td class="text-success" style="font-size:11px;word-break:break-all">${escHtml(s.hash)}</td></tr>`).join("");
+    rows += `<tr><td>${ch.steps.length}</td><td colspan="2" class="text-muted small">
+      reduce last digest → <strong class="text-info">${escHtml(ch.end)}</strong> (endpoint stored in rainbow table)
+    </td></tr>`;
+    block.innerHTML = `
+      <div class="small text-muted mb-1">Chain start <code class="text-warning">${escHtml(ch.start)}</code>
+        → stored end <code class="text-info">${escHtml(ch.end)}</code></div>
+      <div class="table-responsive"><table class="table table-sm result-table mb-0">
+        <thead><tr><th>Step</th><th>Password</th><th>MD5</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    wrap.appendChild(block);
+  });
+
+  const bh = $("rainbow-sample-buttons");
+  bh.innerHTML = "";
+  d.sample_target_hashes.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn btn-sm btn-outline-secondary";
+    b.textContent = s.label || `Sample ${i + 1}`;
+    b.addEventListener("click", () => { $("rainbow-hash-input").value = s.hash; });
+    bh.appendChild(b);
+  });
+}
+
+function initRainbow() {
+  async function loadDemo() {
+    try {
+      const d = await api("/api/rainbow/demo", null, "GET");
+      renderRainbowDemo(d);
+    } catch (err) {
+      showToast(err.message || "Failed to load rainbow demo", "danger");
+    }
+  }
+
+  $("btn-rainbow-lookup").addEventListener("click", async () => {
+    const raw = $("rainbow-hash-input").value.trim().toLowerCase();
+    const h = raw.includes(":") ? raw.split(":").pop().replace(/[^a-f0-9]/g, "") : raw.replace(/[^a-f0-9]/g, "");
+    if (h.length !== 32) {
+      showToast("Enter a 32-character MD5 hex digest.", "warning");
+      return;
+    }
+
+    const btn = $("btn-rainbow-lookup");
+    btn.disabled = true;
+    try {
+      const r = await api("/api/rainbow/lookup", { hash: h });
+      const box = $("rainbow-lookup-result");
+      box.classList.remove("d-none");
+      if (r.found) {
+        const stepRows = r.verify_steps.map(s => `<tr><td class="text-warning">${escHtml(s.plain)}</td>
+          <td class="text-success" style="font-size:11px;word-break:break-all">${escHtml(s.hash)}</td></tr>`).join("");
+        box.innerHTML = `<div class="rule-cracked"><strong>Found</strong> preimage
+          <code class="fs-5">${escHtml(r.plaintext)}</code>
+          <div class="small text-muted mt-2">Chain from <code>${escHtml(r.chain_start)}</code>,
+            matched stored end <code>${escHtml(r.matched_end)}</code>,
+            lookup assumed start column <strong>${r.start_column}</strong>.</div>
+          <table class="table table-sm result-table mt-2"><thead><tr><th>Password</th><th>MD5</th></tr></thead><tbody>
+            ${stepRows}</tbody></table></div>`;
+        showToast("Rainbow lookup succeeded.", "success");
+      } else {
+        box.innerHTML = `<div class="rule-notfound"><strong>Not found</strong> —
+          ${escHtml(r.message || "Try an MD5 of a two-digit password (00–99) from this demo.")}</div>`;
+        showToast("No preimage in demo table.", "warning");
+      }
+      incOp();
+    } catch (err) {
+      showToast(err.message, "danger");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadDemo();
+}
+
 // ── SECTION: Brute Force ───────────────────────────────────────────────────
 
 function searchSpace(charset, maxLen) {
@@ -532,7 +621,10 @@ function initStrength() {
 
       $("score-label-text").textContent = data.label;
       $("score-label-text").style.color = col;
-      $("score-entropy-text").textContent = `Entropy: ${data.entropy} bits ${data.entropy >= 60 ? "✓" : "⚠ (target ≥ 60)"}`;
+      $("score-entropy-text").innerHTML =
+        data.entropy >= 60
+          ? `Entropy: ${data.entropy} bits <i class="fa-solid fa-check ms-1" style="color:var(--green)" aria-hidden="true"></i>`
+          : `Entropy: ${data.entropy} bits <i class="fa-solid fa-triangle-exclamation ms-1 text-warning" aria-hidden="true"></i> <span class="small">(target ≥ 60)</span>`;
 
       // Progress bar
       const bar = $("score-bar");
@@ -556,7 +648,8 @@ function initStrength() {
     } catch (err) {
       showToast(err.message, "danger");
     } finally {
-      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Strength';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Analyze Strength';
     }
   });
 }
@@ -764,6 +857,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initIdentifier();
   initDictionary();
   initRuleAttack();
+  initRainbow();
   initBruteForce();
   initStrength();
   initSecureHash();
