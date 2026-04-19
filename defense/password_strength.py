@@ -23,6 +23,7 @@ init(autoreset=True)
 
 # Path to the common-passwords wordlist (relative to this file's parent)
 WORDLIST_PATH = Path(__file__).parent.parent / "wordlists" / "common_passwords.txt"
+BREACH_WORDLIST_PATH = Path(__file__).parent.parent / "wordlists" / "breached_passwords_small.txt"
 
 
 def load_common_passwords() -> set[str]:
@@ -38,15 +39,45 @@ def load_common_passwords() -> set[str]:
 COMMON_PASSWORDS = load_common_passwords()
 
 
-# ── Scoring rules ─────────────────────────────────────────────────────────────
+def load_breached_passwords() -> set[str]:
+    """
+    Load a small offline breach-style password list.
+    Falls back to a bundled mini-list if no file exists.
+    """
+    if BREACH_WORDLIST_PATH.exists():
+        return {
+            line.strip().lower()
+            for line in BREACH_WORDLIST_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        }
+    return {
+        "123456",
+        "password",
+        "qwerty",
+        "letmein",
+        "welcome",
+        "iloveyou",
+        "admin",
+        "football",
+        "monkey",
+        "abc123",
+        "dragon",
+        "sunshine",
+    }
+
+
+BREACHED_PASSWORDS = load_breached_passwords()
+
+
+# Scoring rules
 
 def check_length(pw: str) -> tuple[int, str]:
     n = len(pw)
-    if n >= 20: return 30, f"{Fore.GREEN}Excellent  (length {n} ≥ 20)"
-    if n >= 16: return 25, f"{Fore.GREEN}Very good  (length {n} ≥ 16)"
-    if n >= 12: return 20, f"{Fore.YELLOW}Good       (length {n} ≥ 12)"
-    if n >=  8: return 10, f"{Fore.YELLOW}Weak       (length {n} ≥ 8 — aim for 12+)"
-    return 0,               f"{Fore.RED}Too short  (length {n} — minimum 8)"
+    if n >= 20: return 30, f"{Fore.GREEN}Excellent  (length {n} >= 20)"
+    if n >= 16: return 25, f"{Fore.GREEN}Very good  (length {n} >= 16)"
+    if n >= 12: return 20, f"{Fore.YELLOW}Good       (length {n} >= 12)"
+    if n >=  8: return 10, f"{Fore.YELLOW}Weak       (length {n} >= 8 - aim for 12+)"
+    return 0,               f"{Fore.RED}Too short  (length {n} - minimum 8)"
 
 
 def check_lowercase(pw: str) -> tuple[int, str]:
@@ -71,7 +102,7 @@ def check_special(pw: str) -> tuple[int, str]:
     specials = set(string.punctuation)
     count = sum(1 for c in pw if c in specials)
     if count >= 3: return 20, f"{Fore.GREEN}Has {count} special characters (excellent)"
-    if count >= 1: return 10, f"{Fore.YELLOW}Has {count} special character(s) — more is better"
+    if count >= 1: return 10, f"{Fore.YELLOW}Has {count} special character(s) - more is better"
     return 0, f"{Fore.RED}No special characters"
 
 
@@ -94,11 +125,40 @@ def check_no_sequence(pw: str) -> tuple[int, str]:
 
 def check_not_common(pw: str) -> tuple[int, str]:
     if pw.lower() in COMMON_PASSWORDS:
-        return -30, f"{Fore.RED}This is a VERY common password — it will be cracked instantly"
+        return -30, f"{Fore.RED}This is a VERY common password - it will be cracked instantly"
     return 15, f"{Fore.GREEN}Not in common-passwords wordlist"
 
 
-# ── Entropy estimate ──────────────────────────────────────────────────────────
+def _normalize_for_breach_lookup(pw: str) -> str:
+    """
+    Normalize simple substitutions often seen in leaked passwords.
+    Example: P@ssw0rd! -> password
+    """
+    substitutions = str.maketrans({
+        "@": "a",
+        "$": "s",
+        "0": "o",
+        "1": "l",
+        "3": "e",
+        "5": "s",
+        "7": "t",
+        "!": "",
+    })
+    normalized = pw.lower().translate(substitutions)
+    return re.sub(r"[^a-z0-9]", "", normalized)
+
+
+def check_not_breached(pw: str) -> tuple[int, str]:
+    normalized = _normalize_for_breach_lookup(pw)
+    if pw.lower() in BREACHED_PASSWORDS or normalized in BREACHED_PASSWORDS:
+        return -30, (
+            f"{Fore.RED}Appears in offline breach list "
+            "(or trivial variant) - choose a different password"
+        )
+    return 10, f"{Fore.GREEN}Not found in offline breach mini-database"
+
+
+# Entropy estimate
 
 def estimate_entropy(pw: str) -> float:
     """Shannon entropy lower bound based on character-set size."""
@@ -111,17 +171,17 @@ def estimate_entropy(pw: str) -> float:
     return len(pw) * math.log2(pool)
 
 
-# ── Overall score → label ─────────────────────────────────────────────────────
+# Overall score to label
 
 def score_label(score: int) -> str:
-    if score >= 90: return f"{Fore.GREEN}VERY STRONG  (excellent — resistant to most attacks)"
+    if score >= 90: return f"{Fore.GREEN}VERY STRONG  (excellent - resistant to most attacks)"
     if score >= 70: return f"{Fore.GREEN}STRONG       (good, keep it unique per site)"
     if score >= 50: return f"{Fore.YELLOW}MODERATE     (acceptable, but could be stronger)"
     if score >= 30: return f"{Fore.YELLOW}WEAK         (vulnerable to dictionary attacks)"
     return             f"{Fore.RED}VERY WEAK    (will be cracked quickly)"
 
 
-# ── Main analyzer ─────────────────────────────────────────────────────────────
+# Main analyzer
 
 def analyze(password: str):
     checks = [
@@ -133,24 +193,25 @@ def analyze(password: str):
         check_no_repeat(password),
         check_no_sequence(password),
         check_not_common(password),
+        check_not_breached(password),
     ]
 
     total = sum(s for s, _ in checks)
-    total = max(0, min(100, total))  # clamp 0–100
+    total = max(0, min(100, total))  # clamp 0-100
 
     entropy = estimate_entropy(password)
 
-    print(f"\n{'─'*55}")
+    print(f"\n{'-'*55}")
     print(f"  Password Strength Analysis")
-    print(f"{'─'*55}")
+    print(f"{'-'*55}")
     for score, msg in checks:
         sign = "+" if score >= 0 else ""
         print(f"  [{sign}{score:+3d}]  {msg}{Style.RESET_ALL}")
-    print(f"{'─'*55}")
-    print(f"  Total score : {total}/100  →  {score_label(total)}{Style.RESET_ALL}")
+    print(f"{'-'*55}")
+    print(f"  Total score : {total}/100  ->  {score_label(total)}{Style.RESET_ALL}")
     print(f"  Entropy     : {entropy:.1f} bits  "
-          f"({'≥ 60 bits — good' if entropy >= 60 else '< 60 bits — too low'})")
-    print(f"{'─'*55}\n")
+          f"({'>= 60 bits - good' if entropy >= 60 else '< 60 bits - too low'})")
+    print(f"{'-'*55}\n")
 
     print(f"{Fore.YELLOW}[LESSON]")
     print("  Entropy measures the unpredictability of a password.")
